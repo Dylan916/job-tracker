@@ -4,6 +4,7 @@ from datetime import date, datetime
 from rich.console import Console
 from rich.table import Table
 from rich import box
+from datetime import date, datetime, timedelta
 
 app = typer.Typer(help="Track your job applications from the command line.")
 
@@ -176,5 +177,47 @@ def stats() -> None:
 
     table.add_section()
     table.add_row("[bold]Total[/bold]", f"[bold]{total}[/bold]", "")
+
+    console.print(table)
+
+@app.command()
+def remind(
+    days: int = typer.Option(7, "--days", "-d", help="Flag apps with no update in this many days"),
+) -> None:
+    """List applications that haven't been updated recently."""
+    cutoff = (datetime.now() - timedelta(days=days)).isoformat(timespec="seconds")
+
+    with get_conn() as conn:
+        rows = conn.execute(
+            """
+            SELECT * FROM applications
+            WHERE status NOT IN ('offer', 'rejected', 'withdrawn')
+            AND updated_at < ?
+            ORDER BY updated_at ASC
+            """,
+            (cutoff,),
+        ).fetchall()
+
+    if not rows:
+        typer.echo(f"No stale applications (nothing older than {days} days).")
+        return
+
+    console.print(f"[yellow]{len(rows)} application(s) with no update in {days}+ days:[/yellow]\n")
+
+    table = Table(box=box.SIMPLE_HEAVY)
+    table.add_column("ID", style="dim", width=4)
+    table.add_column("Company")
+    table.add_column("Role")
+    table.add_column("Status")
+    table.add_column("Last Updated")
+
+    for row in rows:
+        table.add_row(
+            str(row["id"]),
+            row["company"],
+            row["role"],
+            row["status"],
+            row["updated_at"][:10],
+        )
 
     console.print(table)
