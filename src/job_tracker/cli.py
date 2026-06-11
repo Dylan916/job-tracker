@@ -35,3 +35,32 @@ def add(
         conn.commit()
 
     typer.echo(f"Added #{cursor.lastrowid}: {company} — {role}")
+
+@app.command(name="list")
+def list_apps(
+    status: str = typer.Option(None, "--status", "-s", help="Filter by status"),
+    company: str = typer.Option(None, "--company", "-c", help="Filter by company (partial match)"),
+) -> None:
+    """List job applications."""
+    query = "SELECT * FROM applications WHERE 1=1"
+    params = []
+
+    if status:
+        query += " AND status = ?"
+        params.append(status)
+
+    if company:
+        query += " AND company LIKE ?"
+        params.append(f"%{company}%")
+
+    query += " ORDER BY date DESC"
+
+    with get_conn() as conn:
+        rows = conn.execute(query, params).fetchall()
+
+    if not rows:
+        typer.echo("No applications found.")
+        return
+
+    for row in rows:
+        typer.echo(f"#{row['id']} {row['company']} — {row['role']} [{row['status']}] {row['date']}") 
