@@ -6,6 +6,16 @@ from rich.table import Table
 from rich import box
 from datetime import date, datetime, timedelta
 
+STATUS_COLORS = {
+    "applied":      "cyan",
+    "oa":           "blue",
+    "phone":        "yellow",
+    "interviewing": "magenta",
+    "offer":        "green",
+    "rejected":     "red",
+    "withdrawn":    "dim",
+}
+
 app = typer.Typer(help="Track your job applications from the command line.")
 
 console = Console()
@@ -79,12 +89,13 @@ def list_apps(
     table.add_column("Notes")
 
     for row in rows:
+        status_color = STATUS_COLORS.get(row["status"], "white")
         table.add_row(
             str(row["id"]),
             row["company"],
             row["role"],
             row["location"] or "—",
-            row["status"],
+            f"[{status_color}]{row['status']}[/{status_color}]",
             row["date"],
             (row["notes"] or "")[:40],
         )
