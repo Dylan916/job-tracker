@@ -31,7 +31,7 @@ Valid statuses: `applied`, `oa`, `phone`, `interviewing`, `offer`, `rejected`, `
 
 ```bash
 jobs update 1 --status phone
-jobs update 1 --notes "Recruiter: Jenny, follow up Friday"
+jobs update 1 --notes "Recruiter: Joe, follow up Friday"
 ```
 
 ### Delete an application
