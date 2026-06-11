@@ -130,3 +130,24 @@ def update(
 
     typer.echo(f"Updated #{app_id}")
 
+@app.command()
+def delete(
+    app_id: int = typer.Argument(..., help="Application ID to delete"),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation"),
+) -> None:
+    """Delete an application by ID."""
+    with get_conn() as conn:
+        row = conn.execute("SELECT * FROM applications WHERE id = ?", (app_id,)).fetchone()
+
+    if not row:
+        typer.echo(f"No application found with ID {app_id}.")
+        raise typer.Exit(1)
+
+    if not yes:
+        typer.confirm(f"Delete #{app_id}: {row['company']} — {row['role']}?", abort=True)
+
+    with get_conn() as conn:
+        conn.execute("DELETE FROM applications WHERE id = ?", (app_id,))
+        conn.commit()
+
+    typer.echo(f"Deleted #{app_id}")
