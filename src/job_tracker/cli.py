@@ -90,3 +90,43 @@ def list_apps(
 
     console.print(table)
     console.print(f"[dim]{len(rows)} application(s)[/dim]")
+
+@app.command()
+def update(
+    app_id: int = typer.Argument(..., help="Application ID to update"),
+    status: str = typer.Option(None, "--status", "-s", help="New status"),
+    notes: str = typer.Option(None, "--notes", "-n", help="Update notes"),
+    url: str = typer.Option(None, "--url", "-u", help="Update URL"),
+) -> None:
+    """Update an existing application by ID."""
+    fields = ["updated_at = ?"]
+    params = [datetime.now().isoformat(timespec="seconds")]
+
+    if status:
+        fields.append("status = ?")
+        params.append(status)
+    if notes:
+        fields.append("notes = ?")
+        params.append(notes)
+    if url:
+        fields.append("url = ?")
+        params.append(url)
+
+    if len(fields) == 1:
+        typer.echo("Nothing to update. Pass --status, --notes, or --url.")
+        raise typer.Exit(1)
+
+    params.append(app_id)
+
+    with get_conn() as conn:
+        result = conn.execute(
+            f"UPDATE applications SET {', '.join(fields)} WHERE id = ?", params
+        )
+        conn.commit()
+
+    if result.rowcount == 0:
+        typer.echo(f"No application found with ID {app_id}.")
+        raise typer.Exit(1)
+
+    typer.echo(f"Updated #{app_id}")
+
