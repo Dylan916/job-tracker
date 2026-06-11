@@ -1,8 +1,13 @@
 import typer
 from job_tracker.db import init_db, get_conn
 from datetime import date, datetime
+from rich.console import Console
+from rich.table import Table
+from rich import box
 
 app = typer.Typer(help="Track your job applications from the command line.")
+
+console = Console()
 
 @app.callback(invoke_without_command=True)
 def main(ctx: typer.Context) -> None:
@@ -62,5 +67,26 @@ def list_apps(
         typer.echo("No applications found.")
         return
 
+    
+    table = Table(box=box.SIMPLE_HEAVY)
+    table.add_column("ID", style="dim", width=4)
+    table.add_column("Company")
+    table.add_column("Role")
+    table.add_column("Location")
+    table.add_column("Status")
+    table.add_column("Date")
+    table.add_column("Notes")
+
     for row in rows:
-        typer.echo(f"#{row['id']} {row['company']} — {row['role']} [{row['status']}] {row['date']}") 
+        table.add_row(
+            str(row["id"]),
+            row["company"],
+            row["role"],
+            row["location"] or "—",
+            row["status"],
+            row["date"],
+            (row["notes"] or "")[:40],
+        )
+
+    console.print(table)
+    console.print(f"[dim]{len(rows)} application(s)[/dim]")
