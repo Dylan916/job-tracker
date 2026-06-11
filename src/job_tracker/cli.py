@@ -151,3 +151,30 @@ def delete(
         conn.commit()
 
     typer.echo(f"Deleted #{app_id}")
+
+@app.command()
+def stats() -> None:
+    """Show a summary of applications by status."""
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT status, COUNT(*) as count FROM applications GROUP BY status ORDER BY count DESC"
+        ).fetchall()
+        total = conn.execute("SELECT COUNT(*) FROM applications").fetchone()[0]
+
+    if total == 0:
+        typer.echo("No applications yet.")
+        return
+
+    table = Table(box=box.SIMPLE_HEAVY)
+    table.add_column("Status")
+    table.add_column("Count", justify="right")
+    table.add_column("Share", justify="right")
+
+    for row in rows:
+        pct = f"{row['count'] / total * 100:.0f}%"
+        table.add_row(row["status"], str(row["count"]), pct)
+
+    table.add_section()
+    table.add_row("[bold]Total[/bold]", f"[bold]{total}[/bold]", "")
+
+    console.print(table)
